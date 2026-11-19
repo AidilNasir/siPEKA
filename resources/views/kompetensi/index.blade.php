@@ -110,12 +110,14 @@
                 <a href="{{ route('pegawai.index', ['jabatan' => $item['jabatan']]) }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
                     Lihat {{ $item['pegawai_count'] }} Pegawai &rarr;
                 </a>
+                @if(auth()->check() && auth()->user()->isAdmin())
                 <button 
                     @click="openEdit('{{ addslashes($item['jabatan']) }}', '{{ addslashes($item['standar_kompetensi']) }}')"
                     class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
                 >
                     Edit Standar
                 </button>
+                @endif
             </div>
         </div>
         @endforeach

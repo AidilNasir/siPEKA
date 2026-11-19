@@ -74,8 +74,7 @@
             <div class="text-indigo-600">
                 <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                    <polyline points="12 6 12 12 16 14" />
                 </svg>
             </div>
         </div>
@@ -89,11 +88,37 @@
             <!-- Pure Icon (NO Background) -->
             <div class="text-rose-600">
                 <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
             </div>
         </div>
     </div>
+
+    @if(auth()->check() && auth()->user()->isPegawai())
+    <!-- Quick ASN Personal Portal Banner for Pegawai -->
+    <div class="p-3.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sky-950 shadow-2xs">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#091E3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-4 h-4 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                    <path d="M2 12h20" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-[#091E3A]">Pemantauan Kesenjangan ASN ({{ auth()->user()->name }})</h4>
+                <p class="text-[11px] text-sky-700">Memuat rekam evaluasi gap kompetensi, standar SKJ, dan rekomendasi diklat ASN.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ route('laporan.index') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-[#091E3A] text-white shadow-sm hover:bg-[#0e2c54]">
+                Cetak Rapor
+            </a>
+        </div>
+    </div>
+    @endif
 
     <!-- Redesigned High-Fidelity Filter & Action Bar (Compact Font, Fits in 1 Row) -->
     <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-3 sm:p-4">
@@ -165,7 +190,8 @@
                 @endif
             </div>
 
-            <!-- Right CTA Button Group (Fits on 1 line with compact sizing) -->
+            <!-- Right CTA Button Group (Admin only) -->
+            @if(auth()->check() && auth()->user()->isAdmin())
             <div class="shrink-0 flex items-center justify-end">
                 <button 
                     type="button" 
@@ -179,6 +205,7 @@
                     <span>Input Asesmen Monev</span>
                 </button>
             </div>
+            @endif
         </form>
     </div>
 
@@ -201,7 +228,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($analisisList as $item)
-                    <tr class="hover:bg-slate-50/60 transition-colors group">
+                    <tr class="{{ auth()->check() && auth()->user()->nip === $item->nip ? 'bg-sky-50/50' : 'hover:bg-slate-50/60' }} transition-colors group">
                         <!-- ID Monev -->
                         <td class="py-4 pl-4 sm:pl-6 pr-3 font-mono font-bold text-[#091E3A] text-[11px] whitespace-nowrap">
                             {{ $item->id_monev }}
@@ -209,7 +236,12 @@
 
                         <!-- Pegawai -->
                         <td class="py-4 px-3">
-                            <p class="font-bold text-slate-900">{{ $item->pegawai->nama ?? '-' }}</p>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <p class="font-bold text-slate-900">{{ $item->pegawai->nama ?? '-' }}</p>
+                                @if(auth()->check() && auth()->user()->nip === $item->nip)
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-sky-100 text-sky-800 border border-sky-300">Anda</span>
+                                @endif
+                            </div>
                             <p class="text-[11px] text-slate-400 font-mono">{{ $item->nip }}</p>
                             <span class="text-[10px] font-medium text-slate-500">{{ $item->pegawai->jabatan ?? '-' }}</span>
                         </td>
@@ -257,17 +289,40 @@
 
                         <!-- Status -->
                         <td class="py-4 px-3 whitespace-nowrap">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur-xs
-                                @if(str_contains($item->status, 'Memenuhi')) bg-emerald-500/10 text-emerald-700 border-emerald-500/20
-                                @elseif(str_contains($item->status, 'Proses')) bg-indigo-500/10 text-indigo-700 border-indigo-500/20
-                                @else bg-rose-500/10 text-rose-700 border-rose-500/20 @endif">
-                                <span class="w-1.5 h-1.5 rounded-full @if(str_contains($item->status, 'Memenuhi')) bg-emerald-500 @elseif(str_contains($item->status, 'Proses')) bg-indigo-500 @else bg-rose-500 @endif"></span>
-                                {{ $item->status }}
-                            </span>
+                            <div class="inline-flex items-center gap-1.5 text-xs font-semibold
+                                @if(str_contains($item->status, 'Memenuhi')) text-emerald-600
+                                @elseif(str_contains($item->status, 'Proses')) text-indigo-600
+                                @else text-rose-600 @endif">
+                                @if(str_contains($item->status, 'Memenuhi'))
+                                    <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Proses'))
+                                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="9" stroke-width="2.5" class="opacity-20" />
+                                        <path d="M12 3a9 9 0 0 1 9 9" stroke-width="2.5" stroke-linecap="round" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Kritis'))
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                @else
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                @endif
+                                <span>{{ $item->status }}</span>
+                            </div>
                         </td>
 
                         <!-- Actions (Pure icons) -->
                         <td class="py-4 pl-3 pr-4 sm:pr-6 text-right whitespace-nowrap">
+                            @if(auth()->check() && auth()->user()->isAdmin())
                             <div class="inline-flex items-center gap-1.5">
                                 <button 
                                     @click="openEdit({{ json_encode($item) }})"
@@ -291,6 +346,9 @@
                                     </button>
                                 </form>
                             </div>
+                            @else
+                            <span class="text-[11px] font-semibold text-slate-400">Tervalidasi</span>
+                            @endif
                         </td>
                     </tr>
                     @empty

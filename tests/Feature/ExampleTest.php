@@ -16,11 +16,11 @@ class ExampleTest extends TestCase
     }
 
     /**
-     * A basic test example.
+     * A basic test example: the login entrypoint returns a successful response.
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
+        $response = $this->get('/login');
 
         $response->assertStatus(200);
     }

@@ -64,6 +64,29 @@
         </div>
     </div>
 
+    @if(auth()->check() && auth()->user()->isPegawai())
+    <!-- Quick ASN Personal Portal Banner for Pegawai -->
+    <div class="p-3.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sky-950 shadow-2xs">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#091E3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-4 h-4 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-[#091E3A]">Pemantauan Hak 20 JP ({{ auth()->user()->name }})</h4>
+                <p class="text-[11px] text-sky-700">Akumulasi pemenuhan 20 Jam Pelajaran (JP) per tahun sesuai PP No. 11/2017.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ route('laporan.index') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-[#091E3A] text-white shadow-sm hover:bg-[#0e2c54]">
+                Cetak Rapor 20 JP
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Filter Bar (Compact Font, Fits in 1 Row) -->
     <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-3 sm:p-4">
         <form method="GET" action="{{ route('pengembangan.index') }}" class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
@@ -116,6 +139,7 @@
             </div>
 
             <div class="shrink-0 flex items-center justify-end">
+                @if(auth()->check() && auth()->user()->isAdmin())
                 <a 
                     href="{{ route('analisis.index') }}" 
                     class="h-[38px] px-3.5 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#091E3A] hover:bg-[#0e2c54] active:scale-[0.98] text-white text-[11.5px] font-bold shadow-md shadow-[#091E3A]/20 transition-all shrink-0 cursor-pointer"
@@ -126,6 +150,18 @@
                     </svg>
                     <span>Tambah Rencana Diklat</span>
                 </a>
+                @else
+                <a 
+                    href="{{ route('laporan.index') }}" 
+                    class="h-[38px] px-3.5 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-slate-50 active:scale-[0.98] text-[#091E3A] border border-slate-200 text-[11.5px] font-bold shadow-sm transition-all shrink-0 cursor-pointer"
+                >
+                    <svg class="w-3.5 h-3.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>Rapor 20 JP</span>
+                </a>
+                @endif
             </div>
         </form>
     </div>
@@ -148,9 +184,14 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($plans as $plan)
-                    <tr class="hover:bg-slate-50/60 transition-colors">
+                    <tr class="{{ auth()->check() && auth()->user()->nip === $plan->nip ? 'bg-sky-50/50' : 'hover:bg-slate-50/60' }} transition-colors">
                         <td class="py-4 pl-4 sm:pl-6 pr-3">
-                            <p class="font-bold text-slate-900">{{ $plan->pegawai->nama ?? '-' }}</p>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <p class="font-bold text-slate-900">{{ $plan->pegawai->nama ?? '-' }}</p>
+                                @if(auth()->check() && auth()->user()->nip === $plan->nip)
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-sky-100 text-sky-800 border border-sky-300">Anda</span>
+                                @endif
+                            </div>
                             <p class="text-[11px] text-slate-400 font-mono">{{ $plan->nip }}</p>
                         </td>
                         <td class="py-4 px-3 text-slate-700 font-medium">
@@ -179,20 +220,47 @@
                             </div>
                         </td>
                         <td class="py-4 px-3 whitespace-nowrap">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border
-                                @if(str_contains($plan->status, 'Memenuhi')) bg-emerald-500/10 text-emerald-700 border-emerald-500/20
-                                @elseif(str_contains($plan->status, 'Proses')) bg-indigo-500/10 text-indigo-700 border-indigo-500/20
-                                @else bg-amber-500/10 text-amber-700 border-amber-500/20 @endif">
-                                {{ $plan->status }}
-                            </span>
+                            <div class="inline-flex items-center gap-1.5 text-xs font-semibold
+                                @if(str_contains($plan->status, 'Memenuhi')) text-emerald-600
+                                @elseif(str_contains($plan->status, 'Proses')) text-indigo-600
+                                @else text-rose-600 @endif">
+                                @if(str_contains($plan->status, 'Memenuhi'))
+                                    <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                @elseif(str_contains($plan->status, 'Proses'))
+                                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="9" stroke-width="2.5" class="opacity-20" />
+                                        <path d="M12 3a9 9 0 0 1 9 9" stroke-width="2.5" stroke-linecap="round" />
+                                    </svg>
+                                @elseif(str_contains($plan->status, 'Kritis'))
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                @else
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                @endif
+                                <span>{{ $plan->status }}</span>
+                            </div>
                         </td>
                         <td class="py-4 pl-3 pr-4 sm:pr-6 text-right whitespace-nowrap">
+                            @if(auth()->check() && auth()->user()->isAdmin())
                             <button 
                                 @click="openUpdate({{ $plan->id }}, '{{ $plan->nip }}', '{{ addslashes($plan->pegawai->nama ?? '') }}', {{ $plan->jp_terealisasi }}, {{ $plan->target_jp }})"
                                 class="px-3 py-1.5 text-[11px] font-bold text-[#091E3A] bg-slate-100 hover:bg-[#091E3A] hover:text-white rounded-xl transition-all border border-slate-200"
                             >
                                 Catat JP
                             </button>
+                            @else
+                            <span class="text-[11px] font-semibold text-slate-400">Tervalidasi</span>
+                            @endif
                         </td>
                     </tr>
                     @empty

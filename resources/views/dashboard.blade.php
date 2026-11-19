@@ -1,11 +1,246 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Eksekutif')
-@section('header_title', 'Dashboard Pemantauan Kesenjangan')
+@section('title', !empty($isPegawai) ? 'Portal Pegawai ASN' : 'Dashboard Eksekutif')
+@section('header_title', !empty($isPegawai) ? 'Portal Pegawai ASN - BPVP Kendari' : 'Dashboard Pemantauan Kesenjangan')
 
 @section('content')
 <div class="space-y-6 sm:space-y-8 max-w-7xl mx-auto">
 
+    @if(!empty($isPegawai) && !empty($myPegawai))
+    <!-- ================= PEGAWAI ASN EXCLUSIVE DASHBOARD ================= -->
+    <!-- Dedicated Personalized ASN Identity Card -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#091E3A] via-[#13416B] to-[#1c5588] p-5 sm:p-6 lg:p-7 text-white shadow-xl shadow-blue-950/20 border border-white/10">
+        <div class="absolute -top-24 -right-24 w-80 h-80 bg-sky-400/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div class="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                <!-- Pure Official Logo (NO Background Box) -->
+                <img 
+                    src="{{ asset('images/logo.png') }}" 
+                    alt="Logo BPVP Kendari" 
+                    class="w-11 h-11 sm:w-13 sm:h-13 lg:w-14 lg:h-14 object-contain brightness-0 invert drop-shadow shrink-0"
+                >
+                <div class="space-y-1 min-w-0">
+                    <h2 class="text-base sm:text-xl lg:text-2xl font-bold text-white tracking-tight leading-snug">
+                        Selamat Datang, {{ $myPegawai->nama }}
+                    </h2>
+                    <p class="text-xs sm:text-sm text-sky-200/90 font-medium">
+                        NIP: <span class="font-mono font-bold text-white tracking-wide">{{ $myPegawai->nip }}</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action buttons for Pegawai -->
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <a href="{{ route('laporan.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold text-white transition-all shadow-xs">
+                    <svg class="w-4 h-4 text-sky-200" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>Cetak Rapor</span>
+                </a>
+                <a href="{{ route('pengembangan.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white text-[#091E3A] hover:bg-slate-100 text-xs font-bold transition-all shadow-sm">
+                    <span>Detail 20 JP</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3 Quick KPI Cards for this ASN (Equal height & clean typography) -->
+        <div class="relative z-10 mt-5 pt-4 border-t border-white/15 grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
+            <!-- Metric 1: Realisasi Hak 20 JP -->
+            <div class="p-4 sm:p-4.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between text-[11px] sm:text-xs text-sky-200/90 mb-1 font-medium">
+                        <span>Realisasi Hak 20 JP</span>
+                        <span class="font-bold text-white">{{ $myJpProgress }}%</span>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        {{ $myRealisasiJp }} <span class="text-xs font-semibold text-sky-200/80">/ {{ $myTargetJp }} JP</span>
+                    </div>
+                    <!-- Progress bar -->
+                    <div class="w-full bg-white/20 rounded-full h-1.5 mt-2.5 overflow-hidden">
+                        <div class="h-1.5 rounded-full {{ $myJpProgress >= 100 ? 'bg-emerald-400' : 'bg-sky-400' }} transition-all duration-500" style="width: {{ $myJpProgress }}%"></div>
+                    </div>
+                </div>
+                <div class="text-[10.5px] sm:text-[11px] mt-2.5 font-medium {{ $myJpProgress >= 100 ? 'text-emerald-300' : 'text-sky-200' }}">
+                    {{ $myJpProgress >= 100 ? '✓ Hak 20 JP telah tuntas terpenuhi' : 'Perlu pemenuhan ' . max(0, $myTargetJp - $myRealisasiJp) . ' JP lagi tahun ini' }}
+                </div>
+            </div>
+
+            <!-- Metric 2: Standar SKJ Jabatan -->
+            <div class="p-4 sm:p-4.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between">
+                <div>
+                    <div class="text-[11px] sm:text-xs font-medium text-sky-200/90 mb-1">Standar SKJ Jabatan</div>
+                    <p class="text-[11.5px] sm:text-xs text-slate-100 font-normal line-clamp-3 leading-relaxed">
+                        {{ $myPegawai->standar_kompetensi_jabatan ?: 'Standar kompetensi umum vokasi' }}
+                    </p>
+                </div>
+                <div class="mt-2.5 pt-2 border-t border-white/10 text-[10.5px] sm:text-[11px] text-sky-200/80 font-medium truncate">
+                    Jabatan: {{ $myPegawai->jabatan }}
+                </div>
+            </div>
+
+            <!-- Metric 3: Status Monev Terakhir -->
+            <div class="p-4 sm:p-4.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between">
+                <div>
+                    <div class="text-[11px] sm:text-xs font-medium text-sky-200/90 mb-1">Status Monev Terakhir</div>
+                    @if($myAnalisis->isNotEmpty())
+                        <div class="flex items-center gap-1.5 text-sm sm:text-base font-bold text-white">
+                            @if(str_contains($myAnalisis->first()->status, 'Memenuhi'))
+                                <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                </svg>
+                            @elseif(str_contains($myAnalisis->first()->status, 'Proses'))
+                                <svg class="w-3.5 h-3.5 text-sky-300 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="9" stroke-width="2.5" class="opacity-25" />
+                                    <path d="M12 3a9 9 0 0 1 9 9" stroke-width="2.5" stroke-linecap="round" />
+                                </svg>
+                            @else
+                                <svg class="w-4 h-4 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            @endif
+                            <span>{{ $myAnalisis->first()->status }}</span>
+                        </div>
+                        <p class="text-[11px] text-sky-100/80 mt-0.5 line-clamp-2 leading-relaxed">
+                            Rencana: {{ $myAnalisis->first()->rencana_pengembangan ?: 'Belum dijadwalkan' }}
+                        </p>
+                    @else
+                        <div class="text-[11.5px] text-slate-200 font-normal mt-0.5">
+                            Belum ada catatan kesenjangan. Hubungi tim kepegawaian untuk asesmen berkala.
+                        </div>
+                    @endif
+                </div>
+                <div class="mt-2.5 pt-2 border-t border-white/10 text-[10.5px] sm:text-[11px] text-sky-200/80 font-medium">
+                    Asesmen Terakhir: {{ $myAnalisis->first()?->created_at ? $myAnalisis->first()->created_at->format('d M Y') : 'Tahun ' . date('Y') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personal Monev & Development History Table (Only this Pegawai) -->
+    <div class="rounded-2xl bg-white shadow-2xs border border-slate-200/80 overflow-hidden">
+        <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-slate-900">Hasil Pemantauan Kesenjangan & Rencana Pengembangan Pegawai</h3>
+                <p class="text-[11px] sm:text-xs text-slate-400">Rekam resmi monev kompetensi berbasis SKJ untuk {{ $myPegawai->nama }} (NIP: {{ $myPegawai->nip }})</p>
+            </div>
+            <a href="{{ route('analisis.index') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#091E3A] bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                <span>Buka Halaman Kesenjangan</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                    <tr class="bg-slate-50/80 border-b border-slate-100 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <th class="py-3.5 pl-4 sm:pl-6 pr-3">ID Monev</th>
+                        <th class="py-3.5 px-3">Kompetensi Saat Ini</th>
+                        <th class="py-3.5 px-3">Gap Kesenjangan</th>
+                        <th class="py-3.5 px-3">Rencana Pengembangan</th>
+                        <th class="py-3.5 px-3">Realisasi JP</th>
+                        <th class="py-3.5 pl-3 pr-4 sm:pr-6 text-right">Status Hak</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-xs">
+                    @forelse($myAnalisis as $item)
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-4 pl-4 sm:pl-6 pr-3 font-mono font-semibold text-indigo-600 text-[11px] whitespace-nowrap">
+                            {{ $item->id_monev }}
+                        </td>
+                        <td class="py-4 px-3 text-slate-700">
+                            {{ $item->kompetensi_saat_ini }}
+                        </td>
+                        <td class="py-4 px-3">
+                            <span class="text-rose-700 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg font-semibold inline-block">
+                                {{ $item->gap_kesenjangan }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-3 whitespace-nowrap font-medium text-slate-800">
+                            {{ $item->rencana_pengembangan }}
+                        </td>
+                        <td class="py-4 px-3 whitespace-nowrap">
+                            <div class="w-24 sm:w-28 space-y-1">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-bold text-slate-800">{{ $item->jp_terealisasi }}/{{ $item->target_jp }} JP</span>
+                                    <span class="text-[10px] text-slate-400">{{ $item->jp_progress }}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full @if($item->jp_progress >= 100) bg-emerald-500 @elseif($item->jp_progress > 0) bg-indigo-600 @else bg-slate-300 @endif" style="width: {{ $item->jp_progress }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 pl-3 pr-4 sm:pr-6 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center justify-end gap-1.5 text-xs font-semibold
+                                @if(str_contains($item->status, 'Memenuhi')) text-emerald-600
+                                @elseif(str_contains($item->status, 'Proses')) text-indigo-600
+                                @else text-rose-600 @endif">
+                                @if(str_contains($item->status, 'Memenuhi'))
+                                    <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Proses'))
+                                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="9" stroke-width="2.5" class="opacity-20" />
+                                        <path d="M12 3a9 9 0 0 1 9 9" stroke-width="2.5" stroke-linecap="round" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Kritis'))
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                @else
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                @endif
+                                <span>{{ $item->status }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="py-10 text-center text-slate-400">
+                            Belum ada rekam asesmen kesenjangan untuk akun Anda. Hubungi tim kepegawaian BPVP Kendari.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Info Box Regulasi Hak 20 JP -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-sky-50/80 border border-sky-200/80 flex items-start gap-3.5 text-sky-900">
+        <svg class="w-5 h-5 text-sky-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        <div class="text-xs leading-relaxed space-y-1">
+            <p class="font-bold text-sky-950">Informasi Regulasi Hak Pengembangan Kompetensi ASN</p>
+            <p class="text-sky-800">
+                Sesuai dengan <strong>PP No. 11 Tahun 2017</strong> tentang Manajemen PNS dan <strong>Peraturan LAN No. 10 Tahun 2018</strong>, setiap Pegawai Negeri Sipil (PNS) berhak memperoleh pengembangan kompetensi paling sedikit <strong>20 (dua puluh) Jam Pelajaran (JP)</strong> dalam 1 (satu) tahun anggaran.
+            </p>
+        </div>
+    </div>
+
+    @else
+    <!-- ================= ADMINISTRATOR FULL EXECUTIVE DASHBOARD ================= -->
     <!-- Welcome & Executive Summary Banner -->
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 sm:p-8 text-white shadow-xl shadow-indigo-950/20 border border-slate-800">
         <!-- Abstract Glow & Blur Accents -->
@@ -25,7 +260,6 @@
             <!-- Action buttons (Responsive stack on mobile) -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0">
                 <a href="{{ route('laporan.index') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white transition-all shadow-xs hover:border-white/30 text-center">
-                    <!-- Clean icon (No background) -->
                     <svg class="w-4 h-4 text-indigo-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -33,7 +267,6 @@
                 </a>
 
                 <a href="{{ route('analisis.index') }}" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/30 hover:scale-[1.02] text-center">
-                    <!-- Clean icon (No background) -->
                     <svg class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <line x1="12" y1="5" x2="12" y2="19" />
                         <line x1="5" y1="12" x2="19" y2="12" />
@@ -64,14 +297,12 @@
         </div>
     </div>
 
-    <!-- 4 Overview Metric Cards (Responsive Grid: 1 col on mobile, 2 col on tablet, 4 col on desktop) -->
-    <!-- All Icons have NO BACKGROUND WRAPPERS -->
+    <!-- 4 Overview Metric Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <!-- Card 1: Total ASN -->
         <div class="group relative rounded-2xl bg-white p-5 sm:p-6 shadow-2xs hover:shadow-xl hover:shadow-slate-200/50 border border-slate-200/70 transition-all duration-300">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ $metrics['total_asn']['label'] }}</span>
-                <!-- Pure Icon (NO background box) -->
                 <div class="text-blue-600 group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -97,7 +328,6 @@
         <div class="group relative rounded-2xl bg-white p-5 sm:p-6 shadow-2xs hover:shadow-xl hover:shadow-slate-200/50 border border-slate-200/70 transition-all duration-300">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ $metrics['total_analisis']['label'] }}</span>
-                <!-- Pure Icon (NO background box) -->
                 <div class="text-indigo-600 group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <circle cx="12" cy="12" r="10" />
@@ -122,7 +352,6 @@
         <div class="group relative rounded-2xl bg-white p-5 sm:p-6 shadow-2xs hover:shadow-xl hover:shadow-slate-200/50 border border-slate-200/70 transition-all duration-300">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ $metrics['compliance_rate']['label'] }}</span>
-                <!-- Pure Icon (NO background box) -->
                 <div class="text-emerald-600 group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -146,7 +375,6 @@
         <div class="group relative rounded-2xl bg-white p-5 sm:p-6 shadow-2xs hover:shadow-xl hover:shadow-slate-200/50 border border-slate-200/70 transition-all duration-300">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ $metrics['need_intervention']['label'] }}</span>
-                <!-- Pure Icon (NO background box) -->
                 <div class="text-amber-600 group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
@@ -166,7 +394,7 @@
         </div>
     </div>
 
-    <!-- Charts & Analytics Section (Responsive: 1 col on mobile/tablet, 3 col on large desktop) -->
+    <!-- Charts & Analytics Section -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         <!-- Main Chart: Realisasi Jam Pelajaran (JP) -->
         <div class="lg:col-span-2 rounded-2xl bg-white p-5 sm:p-6 shadow-2xs border border-slate-200/70 flex flex-col justify-between">
@@ -190,7 +418,7 @@
                 </div>
             </div>
 
-            <!-- Footer summary stats (Responsive grid) -->
+            <!-- Footer summary stats -->
             <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                 <div class="p-2.5 rounded-xl bg-slate-50/70">
                     <span class="text-[11px] text-slate-400 font-medium">Memenuhi Hak 20 JP</span>
@@ -246,9 +474,8 @@
         </div>
     </div>
 
-    <!-- Recent Monitored ASN Data Table Section (Responsive Table) -->
+    <!-- Recent Monitored ASN Data Table Section -->
     <div class="rounded-2xl bg-white shadow-2xs border border-slate-200/70 overflow-hidden">
-        <!-- Table Header & Actions -->
         <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
                 <h3 class="text-sm sm:text-base font-bold text-slate-900">Hasil Pemantauan Kesenjangan Terkini</h3>
@@ -258,7 +485,6 @@
             <div class="flex items-center gap-2.5">
                 <a href="{{ route('analisis.index') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">
                     <span>Lihat Semua Analisis ({{ $totalAnalisis }})</span>
-                    <!-- Clean icon (No background) -->
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <polyline points="9 18 15 12 9 6" />
                     </svg>
@@ -266,7 +492,6 @@
             </div>
         </div>
 
-        <!-- Modern Table without harsh borders & with horizontal scroll on mobile -->
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[700px]">
                 <thead>
@@ -315,13 +540,35 @@
                             </div>
                         </td>
                         <td class="py-4 pl-3 pr-4 sm:pr-6 text-right whitespace-nowrap">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur-xs
-                                @if(str_contains($item->status, 'Memenuhi')) bg-emerald-500/10 text-emerald-700 border-emerald-500/20
-                                @elseif(str_contains($item->status, 'Proses')) bg-indigo-500/10 text-indigo-700 border-indigo-500/20
-                                @else bg-rose-500/10 text-rose-700 border-rose-500/20 @endif">
-                                <span class="w-1.5 h-1.5 rounded-full @if(str_contains($item->status, 'Memenuhi')) bg-emerald-500 @elseif(str_contains($item->status, 'Proses')) bg-indigo-500 @else bg-rose-500 @endif"></span>
-                                {{ $item->status }}
-                            </span>
+                            <div class="inline-flex items-center justify-end gap-1.5 text-xs font-semibold
+                                @if(str_contains($item->status, 'Memenuhi')) text-emerald-600
+                                @elseif(str_contains($item->status, 'Proses')) text-indigo-600
+                                @else text-rose-600 @endif">
+                                @if(str_contains($item->status, 'Memenuhi'))
+                                    <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Proses'))
+                                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="9" stroke-width="2.5" class="opacity-20" />
+                                        <path d="M12 3a9 9 0 0 1 9 9" stroke-width="2.5" stroke-linecap="round" />
+                                    </svg>
+                                @elseif(str_contains($item->status, 'Kritis'))
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                @else
+                                    <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                @endif
+                                <span>{{ $item->status }}</span>
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -335,11 +582,13 @@
             </table>
         </div>
     </div>
+    @endif
 
 </div>
 @endsection
 
 @push('scripts')
+@if(empty($isPegawai))
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var options = {
@@ -397,4 +646,5 @@
         chart.render();
     });
 </script>
+@endif
 @endpush

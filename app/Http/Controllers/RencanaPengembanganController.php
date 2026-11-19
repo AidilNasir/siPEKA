@@ -14,7 +14,15 @@ class RencanaPengembanganController extends Controller
      */
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $isPegawai = $user && $user->isPegawai();
+
         $query = AnalisisKesenjangan::with('pegawai');
+
+        // Jika login sebagai Pegawai, batasi HANYA untuk data pegawai tersebut saja
+        if ($isPegawai && $user->nip) {
+            $query->where('nip', $user->nip);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -35,19 +43,32 @@ class RencanaPengembanganController extends Controller
 
         $plans = $query->orderBy('jp_terealisasi', 'desc')->paginate(15)->withQueryString();
 
-        $totalPlans = AnalisisKesenjangan::count();
-        $totalTargetJp = AnalisisKesenjangan::sum('target_jp');
-        $totalRealisasiJp = AnalisisKesenjangan::sum('jp_terealisasi');
-        $avgProgress = $totalTargetJp > 0 ? round(($totalRealisasiJp / $totalTargetJp) * 100, 1) : 0;
-
-        $completedCount = AnalisisKesenjangan::whereColumn('jp_terealisasi', '>=', 'target_jp')->count();
-        $inProgressCount = AnalisisKesenjangan::whereColumn('jp_terealisasi', '<', 'target_jp')->where('jp_terealisasi', '>', 0)->count();
-        $zeroCount = AnalisisKesenjangan::where('jp_terealisasi', 0)->count();
-
-        // Types of training breakdown
-        $trainingTypes = AnalisisKesenjangan::selectRaw('rencana_pengembangan, count(*) as count, sum(jp_terealisasi) as total_jp')
-            ->groupBy('rencana_pengembangan')
-            ->get();
+        // Calculate statistics scoped per role
+        if ($isPegawai && $user->nip) {
+            $scopedQuery = AnalisisKesenjangan::where('nip', $user->nip);
+            $totalPlans = (clone $scopedQuery)->count();
+            $totalTargetJp = (clone $scopedQuery)->sum('target_jp');
+            $totalRealisasiJp = (clone $scopedQuery)->sum('jp_terealisasi');
+            $avgProgress = $totalTargetJp > 0 ? round(($totalRealisasiJp / $totalTargetJp) * 100, 1) : 0;
+            $completedCount = (clone $scopedQuery)->whereColumn('jp_terealisasi', '>=', 'target_jp')->count();
+            $inProgressCount = (clone $scopedQuery)->whereColumn('jp_terealisasi', '<', 'target_jp')->where('jp_terealisasi', '>', 0)->count();
+            $zeroCount = (clone $scopedQuery)->where('jp_terealisasi', 0)->count();
+            $trainingTypes = (clone $scopedQuery)
+                ->selectRaw('rencana_pengembangan, count(*) as count, sum(jp_terealisasi) as total_jp')
+                ->groupBy('rencana_pengembangan')
+                ->get();
+        } else {
+            $totalPlans = AnalisisKesenjangan::count();
+            $totalTargetJp = AnalisisKesenjangan::sum('target_jp');
+            $totalRealisasiJp = AnalisisKesenjangan::sum('jp_terealisasi');
+            $avgProgress = $totalTargetJp > 0 ? round(($totalRealisasiJp / $totalTargetJp) * 100, 1) : 0;
+            $completedCount = AnalisisKesenjangan::whereColumn('jp_terealisasi', '>=', 'target_jp')->count();
+            $inProgressCount = AnalisisKesenjangan::whereColumn('jp_terealisasi', '<', 'target_jp')->where('jp_terealisasi', '>', 0)->count();
+            $zeroCount = AnalisisKesenjangan::where('jp_terealisasi', 0)->count();
+            $trainingTypes = AnalisisKesenjangan::selectRaw('rencana_pengembangan, count(*) as count, sum(jp_terealisasi) as total_jp')
+                ->groupBy('rencana_pengembangan')
+                ->get();
+        }
 
         return view('pengembangan.index', compact(
             'plans',
@@ -65,8 +86,14 @@ class RencanaPengembanganController extends Controller
     /**
      * Quick update for realisasi JP.
      */
-    public function updateJp(Request $request, AnalisisKesenjangan $analisis): RedirectResponse
+    public function updateJp(Request $request, $id): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            return back()->with('error', 'Hanya Administrator yang berwenang mencatat dan memvalidasi Jam Pelajaran (JP).');
+        }
+
+        $analisis = $id instanceof AnalisisKesenjangan ? $id : AnalisisKesenjangan::findOrFail($id);
+
         $validated = $request->validate([
             'jp_terealisasi' => 'required|integer|min:0',
         ]);

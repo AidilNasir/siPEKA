@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AnalisisKesenjangan;
 use App\Models\Pegawai;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,14 @@ class StandarKompetensiController extends Controller
      */
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $isPegawai = $user && $user->isPegawai();
+        $myJabatan = null;
+
+        if ($isPegawai && $user->nip) {
+            $myJabatan = Pegawai::where('nip', $user->nip)->value('jabatan');
+        }
+
         $search = $request->input('search');
 
         $jabatansQuery = Pegawai::select('jabatan')
@@ -37,7 +46,12 @@ class StandarKompetensiController extends Controller
             ];
         });
 
-        return view('kompetensi.index', compact('catalog'));
+        // Jika Pegawai, tempatkan jabatan mereka di posisi paling atas (pinned)
+        if ($myJabatan) {
+            $catalog = $catalog->sortByDesc(fn ($item) => $item['jabatan'] === $myJabatan)->values();
+        }
+
+        return view('kompetensi.index', compact('catalog', 'myJabatan', 'isPegawai'));
     }
 
     /**
@@ -45,6 +59,10 @@ class StandarKompetensiController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            return back()->with('error', 'Hanya Administrator yang berwenang mengubah Standar Kompetensi Jabatan.');
+        }
+
         $validated = $request->validate([
             'jabatan' => 'required|string',
             'standar_kompetensi_jabatan' => 'required|string',
@@ -52,6 +70,12 @@ class StandarKompetensiController extends Controller
 
         Pegawai::where('jabatan', $validated['jabatan'])->update([
             'standar_kompetensi_jabatan' => $validated['standar_kompetensi_jabatan'],
+        ]);
+
+        // Sinkronkan juga standar kompetensi pada riwayat monev pegawai terkait
+        $nips = Pegawai::where('jabatan', $validated['jabatan'])->pluck('nip');
+        AnalisisKesenjangan::whereIn('nip', $nips)->update([
+            'standar_kompetensi' => $validated['standar_kompetensi_jabatan'],
         ]);
 
         return redirect()->route('kompetensi.index')->with('success', 'Standar Kompetensi Jabatan untuk "'.$validated['jabatan'].'" berhasil diperbarui.');

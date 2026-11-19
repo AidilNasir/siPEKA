@@ -65,6 +65,29 @@
         </div>
     </div>
 
+    @if(auth()->check() && auth()->user()->isPegawai())
+    <!-- Quick ASN Personal Portal Banner for Pegawai -->
+    <div class="p-3.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sky-950 shadow-2xs">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#091E3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <svg class="w-4 h-4 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-[#091E3A]">Profil Pegawai ASN ({{ auth()->user()->name }})</h4>
+                <p class="text-[11px] text-sky-700">Data resmi kepegawaian ASN di lingkungan Balai Pelatihan Vokasi dan Produktivitas Kendari.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ route('dashboard') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-[#091E3A] text-white shadow-sm hover:bg-[#0e2c54]">
+                Dashboard
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Filter & Search Toolbar (Compact Font, Fits in 1 Row without overlap) -->
     <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-3 sm:p-4">
         <form method="GET" action="{{ route('pegawai.index') }}" class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
@@ -131,7 +154,8 @@
                 @endif
             </div>
 
-            <!-- Action Button: Tambah Pegawai (Deep navy theme, isolated shrink-0) -->
+            <!-- Action Button: Tambah Pegawai (Admin only) -->
+            @if(auth()->check() && auth()->user()->isAdmin())
             <div class="shrink-0 flex items-center justify-end">
                 <button 
                     type="button"
@@ -145,6 +169,7 @@
                     <span>Tambah ASN Baru</span>
                 </button>
             </div>
+            @endif
         </form>
     </div>
 
@@ -164,18 +189,23 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($pegawais as $index => $pegawai)
-                    <tr class="hover:bg-slate-50/60 transition-colors group">
+                    <tr class="{{ auth()->check() && auth()->user()->nip === $pegawai->nip ? 'bg-sky-50/50' : 'hover:bg-slate-50/60' }} transition-colors group">
                         <td class="py-4 pl-4 sm:pl-6 pr-3 text-slate-400 font-mono text-[11px]">
                             {{ $pegawais->firstItem() + $index }}
                         </td>
                         <td class="py-4 px-3">
                             <div class="flex items-center gap-3">
                                 <!-- Clean Avatar -->
-                                <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 font-bold flex items-center justify-center text-xs shrink-0 ring-1 ring-slate-200">
+                                <div class="w-9 h-9 rounded-xl {{ auth()->check() && auth()->user()->nip === $pegawai->nip ? 'bg-[#091E3A] text-white ring-2 ring-sky-400' : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200' }} font-bold flex items-center justify-center text-xs shrink-0">
                                     {{ strtoupper(substr($pegawai->nama, 0, 2)) }}
                                 </div>
                                 <div>
-                                    <p class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ $pegawai->nama }}</p>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <p class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ $pegawai->nama }}</p>
+                                        @if(auth()->check() && auth()->user()->nip === $pegawai->nip)
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-sky-100 text-sky-800 border border-sky-300">Anda</span>
+                                        @endif
+                                    </div>
                                     <p class="text-[11px] text-slate-400 font-mono">{{ $pegawai->nip }}</p>
                                 </div>
                             </div>
@@ -191,14 +221,21 @@
                         </td>
                         <td class="py-4 px-3 whitespace-nowrap">
                             @if($pegawai->analisisKesenjangan->count() > 0)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                {{ $pegawai->analisisKesenjangan->count() }} Asesmen
-                            </span>
+                            <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                <svg class="w-4 h-4 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                </svg>
+                                <span>{{ $pegawai->analisisKesenjangan->count() }} Asesmen</span>
+                            </div>
                             @else
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                                Belum Dimonev
-                            </span>
+                            <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                                <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="8" y1="12" x2="16" y2="12" />
+                                </svg>
+                                <span>Belum Dimonev</span>
+                            </div>
                             @endif
                         </td>
                         <td class="py-4 pl-3 pr-4 sm:pr-6 text-right whitespace-nowrap">
@@ -216,6 +253,7 @@
                                     </svg>
                                 </a>
 
+                                @if(auth()->check() && auth()->user()->isAdmin())
                                 <!-- Edit Pegawai Button (Pure icon) -->
                                 <button 
                                     @click="openEdit({{ json_encode($pegawai) }})"
@@ -239,6 +277,7 @@
                                         </svg>
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

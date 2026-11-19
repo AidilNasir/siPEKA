@@ -10,10 +10,30 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     /**
-     * Display the siPEKA Executive Dashboard with live database stats.
+     * Display the siPEKA Executive Dashboard with live database stats,
+     * tailored to both Administrator and Pegawai ASN roles.
      */
     public function index(Request $request): View
     {
+        $user = auth()->user();
+        $isPegawai = $user && $user->isPegawai();
+        $myPegawai = null;
+        $myAnalisis = collect();
+        $myTargetJp = 20;
+        $myRealisasiJp = 0;
+        $myJpProgress = 0;
+
+        // Jika yang login adalah Pegawai, ambil data personalnya
+        if ($isPegawai && $user->nip) {
+            $myPegawai = Pegawai::where('nip', $user->nip)->first();
+            if ($myPegawai) {
+                $myAnalisis = AnalisisKesenjangan::where('nip', $myPegawai->nip)->latest()->get();
+                $myTargetJp = $myAnalisis->sum('target_jp') ?: 20;
+                $myRealisasiJp = $myAnalisis->sum('jp_terealisasi');
+                $myJpProgress = $myTargetJp > 0 ? min(100, round(($myRealisasiJp / $myTargetJp) * 100, 1)) : 0;
+            }
+        }
+
         $totalPegawai = Pegawai::count();
         $totalAnalisis = AnalisisKesenjangan::count();
         $memenuhiHak = AnalisisKesenjangan::where('status', 'like', '%Memenuhi%')->count();
@@ -78,7 +98,13 @@ class DashboardController extends Controller
             'belumMemenuhi',
             'jpAchievementRate',
             'recentAnalisis',
-            'jabatanStats'
+            'jabatanStats',
+            'isPegawai',
+            'myPegawai',
+            'myAnalisis',
+            'myTargetJp',
+            'myRealisasiJp',
+            'myJpProgress'
         ));
     }
 }

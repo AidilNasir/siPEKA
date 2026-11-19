@@ -15,7 +15,15 @@ class AnalisisKesenjanganController extends Controller
      */
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $isPegawai = $user && $user->isPegawai();
+
         $query = AnalisisKesenjangan::with('pegawai');
+
+        // Jika login sebagai Pegawai, batasi HANYA untuk data pegawai tersebut saja
+        if ($isPegawai && $user->nip) {
+            $query->where('nip', $user->nip);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -43,13 +51,26 @@ class AnalisisKesenjanganController extends Controller
 
         $statuses = AnalisisKesenjangan::distinct()->whereNotNull('status')->pluck('status');
         $rencanaTypes = AnalisisKesenjangan::distinct()->whereNotNull('rencana_pengembangan')->pluck('rencana_pengembangan');
-        $allPegawai = Pegawai::orderBy('nama')->get(['id', 'nip', 'nama', 'jabatan', 'standar_kompetensi_jabatan']);
 
-        // Summary stats
-        $totalEvaluated = AnalisisKesenjangan::count();
-        $totalMet = AnalisisKesenjangan::where('status', 'like', '%Memenuhi%')->count();
-        $totalProcess = AnalisisKesenjangan::where('status', 'like', '%Proses%')->count();
-        $totalUnmet = AnalisisKesenjangan::whereIn('status', ['Belum Memenuhi', 'Kesenjangan Kritis'])->count();
+        if ($isPegawai && $user->nip) {
+            $allPegawai = Pegawai::where('nip', $user->nip)->get(['id', 'nip', 'nama', 'jabatan', 'standar_kompetensi_jabatan']);
+        } else {
+            $allPegawai = Pegawai::orderBy('nama')->get(['id', 'nip', 'nama', 'jabatan', 'standar_kompetensi_jabatan']);
+        }
+
+        // Summary stats scoped per role
+        if ($isPegawai && $user->nip) {
+            $scopedQuery = AnalisisKesenjangan::where('nip', $user->nip);
+            $totalEvaluated = (clone $scopedQuery)->count();
+            $totalMet = (clone $scopedQuery)->where('status', 'like', '%Memenuhi%')->count();
+            $totalProcess = (clone $scopedQuery)->where('status', 'like', '%Proses%')->count();
+            $totalUnmet = (clone $scopedQuery)->whereIn('status', ['Belum Memenuhi', 'Kesenjangan Kritis'])->count();
+        } else {
+            $totalEvaluated = AnalisisKesenjangan::count();
+            $totalMet = AnalisisKesenjangan::where('status', 'like', '%Memenuhi%')->count();
+            $totalProcess = AnalisisKesenjangan::where('status', 'like', '%Proses%')->count();
+            $totalUnmet = AnalisisKesenjangan::whereIn('status', ['Belum Memenuhi', 'Kesenjangan Kritis'])->count();
+        }
 
         return view('analisis.index', compact(
             'analisisList',
@@ -68,6 +89,10 @@ class AnalisisKesenjanganController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            return back()->with('error', 'Hanya Administrator yang berwenang menginput data Asesmen Monev.');
+        }
+
         $validated = $request->validate([
             'nip' => 'required|string|exists:pegawais,nip',
             'standar_kompetensi' => 'nullable|string',
@@ -102,8 +127,14 @@ class AnalisisKesenjanganController extends Controller
     /**
      * Update the specified Analisis Kesenjangan in storage.
      */
-    public function update(Request $request, AnalisisKesenjangan $analisis): RedirectResponse
+    public function update(Request $request, $id): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            return back()->with('error', 'Hanya Administrator yang berwenang memperbarui hasil asesmen monev.');
+        }
+
+        $analisis = $id instanceof AnalisisKesenjangan ? $id : AnalisisKesenjangan::findOrFail($id);
+
         $validated = $request->validate([
             'standar_kompetensi' => 'nullable|string',
             'kompetensi_saat_ini' => 'required|string',
@@ -123,8 +154,13 @@ class AnalisisKesenjanganController extends Controller
     /**
      * Remove the specified Analisis Kesenjangan from storage.
      */
-    public function destroy(AnalisisKesenjangan $analisis): RedirectResponse
+    public function destroy(Request $request, $id): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            return back()->with('error', 'Hanya Administrator yang berwenang menghapus data monev.');
+        }
+
+        $analisis = $id instanceof AnalisisKesenjangan ? $id : AnalisisKesenjangan::findOrFail($id);
         $analisis->delete();
 
         return redirect()->route('analisis.index')->with('success', 'Data Analisis Kesenjangan berhasil dihapus.');

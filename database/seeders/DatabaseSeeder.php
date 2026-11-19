@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\AnalisisKesenjangan;
 use App\Models\Pegawai;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,6 +15,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 1. Seed Default Administrator (username: admin, password: admin)
+        User::updateOrCreate(
+            ['username' => 'admin'],
+            [
+                'name' => 'Administrator BPVP',
+                'email' => 'admin@bpvpkendari.kemnaker.go.id',
+                'password' => Hash::make('admin'),
+                'role' => 'admin',
+                'nip' => null,
+            ]
+        );
+
         $pegawais = [
             ['nip' => '198108022009121001', 'nama' => 'M.A. HABIBI KADIR,S.T., M.M.', 'jabatan' => 'KEPALA BPVP KENDARI', 'unit_kerja' => 'BPVP KENDARI', 'standar_kompetensi_jabatan' => 'Kepemimpinan strategis organisasi vokasi, Kebijakan kemitraan industri & DUDI, Akuntabilitas kinerja instansi pemerintah (SAKIP), Manajemen mutu lembaga pelatihan'],
             ['nip' => '197707312003121007', 'nama' => 'ANSHARI, S.Sos., M.Ak', 'jabatan' => 'KEPALA SUB BAGIAN UMUM', 'unit_kerja' => 'BPVP KENDARI', 'standar_kompetensi_jabatan' => 'Manajemen ketatausahaan & kerumahtanggaan, Pengawasan pengelolaan BMN dan logistik, Disiplin aparatur dan protokol kedinasan'],
